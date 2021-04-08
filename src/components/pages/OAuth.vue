@@ -32,24 +32,23 @@ export default {
       facebook: {func: 'FacebookAuthProvider', signin: false}
     })
     function userSignin(platform) {
+      switchLoading(true)
       let functionName = authList[platform].func
       const provider = new firebase.auth[functionName]()
       firebase.auth()
         .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(() => firebase.auth().signInWithPopup(provider)
-          .then((result) => {
-            /** @type {firebase.auth.OAuthCredential} */
-            // var credential = result.credential
-            // This gives you a Access Token. You can use it to access the Google/FB API.
-            // var token = credential.accessToken
-            authList[platform].signin = true
-            handleUserSignin(platform, result.user)
-            switchLoading(false)
-          }).catch(err => {
-            console.log(err)
-          })
-        ).catch(err => {
+        .then(() => {
+          firebase.auth().signInWithPopup(provider)
+            .then(() => {
+              // var credential = result.credential
+              // var token = credential.accessToken
+            }).catch(err => {
+              console.log(err)
+              switchLoading(false)
+            })
+        }).catch(err => {
           console.log(err)
+          switchLoading(false)
         })
     }
     // Sign Out
