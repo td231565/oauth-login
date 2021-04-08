@@ -1,26 +1,28 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div v-if="loading" class="loading"><h2>Loading...</h2></div>
+  <OAuth />
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import { computed } from 'vue'
+import { useStore } from 'vuex'
+import OAuth from './components/pages/OAuth.vue'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    OAuth
+  },
+  setup () {
+    const store = useStore()
+    const loading = computed(() => store.state.loading)
+    return {
+      loading
+    }
   }
 }
 </script>
 
 <style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+@import './assets/style';
 </style>
