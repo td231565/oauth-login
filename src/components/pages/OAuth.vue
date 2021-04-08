@@ -13,6 +13,7 @@ import {ApiMail} from '@/common/api'
 import firebase from '@/common/firebase'
 import { useStore } from 'vuex'
 import {ref, reactive, onMounted} from 'vue'
+import Utils from '@/utils/utils.js'
 import Button from '@/components/utils/CustomButton'
 
 export default {
@@ -38,14 +39,15 @@ export default {
       firebase.auth()
         .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
         .then(() => {
-          firebase.auth().signInWithPopup(provider)
-            .then(() => {
-              // var credential = result.credential
-              // var token = credential.accessToken
-            }).catch(err => {
-              console.log(err)
-              switchLoading(false)
-            })
+          firebase.auth().signInWithRedirect(provider)
+          // firebase.auth().signInWithPopup(provider)
+          //   .then(() => {
+          //     // var credential = result.credential
+          //     // var token = credential.accessToken
+          //   }).catch(err => {
+          //     console.log(err)
+          //     switchLoading(false)
+          //   })
         }).catch(err => {
           console.log(err)
           switchLoading(false)
@@ -56,6 +58,7 @@ export default {
       firebase.auth().signOut().then(() => {
         isGoogleSignin.value = false
         isFBSignin.value = false
+        Utils.clearUrlParams()
       })
     }
     // 檢查登入狀態
@@ -72,28 +75,32 @@ export default {
       handleUserState()
     })
     // 登入成功處理
-    let gmail = ''
     function handleUserSignin (platform, data) {
       if (platform.includes('google')) {
         const {email} = data
-        gmail = email
+        Utils.addUrlParams('to', email)
         isGoogleSignin.value = true
       } else if (platform.includes('facebook')) {
         const {displayName, photoURL} = data
+        sendMail(displayName, photoURL)
         userProfile.value = {name: displayName, photo: photoURL}
-        sendMail(gmail, displayName, photoURL)
+        Utils.addUrlParams('name', displayName)
+        Utils.addUrlParams('photo', photoURL)
         isFBSignin.value = true
       }
     }
     // 寄信給 gmail 含FB大頭貼和姓名
-    function sendMail (to, name, photo) {
-      ApiMail.send(to, name, photo).then(() => {
-        console.log('send success')
-      }).catch(e => {
-        console.log(e)
-      })
+    function sendMail (name, photo) {
+      const params = Utils.getUrlParams()
+      if (!params.name) {
+        ApiMail.send(params.to, name, photo).then(() => {
+          console.log('send success')
+        }).catch(e => {
+          console.log(e)
+        })
+      }
     }
-    // 讀取
+    // 讀取畫面
     const store = useStore()
     function switchLoading (mode) {
       store.commit('switchLoading', mode)
