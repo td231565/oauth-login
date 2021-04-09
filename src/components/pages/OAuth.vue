@@ -1,7 +1,7 @@
 <template>
   <div>
     <section class="mb-3">
-      <h3 class="mb-1">{{userProfile.name ? 'Hello, ' : '　'}}{{userProfile.name || '　'}}</h3>
+      <h3 class="mb-1">{{userProfile.name ? 'Hello, ' : '\u0001'}}{{userProfile.name || '\u0001'}}</h3>
       <div style="width: 50px; height: 50px; margin: auto;"
         :style="`background-image: url(${userProfile.photo})`"></div>
     </section>
@@ -15,11 +15,11 @@
 
 <script>
 import {ApiMail} from '@/common/api'
-import firebase from '@/common/firebase'
-import { useStore } from 'vuex'
+import {useStore} from 'vuex'
 import {ref, reactive, onMounted} from 'vue'
 import Utils from '@/utils/utils.js'
 import Button from '@/components/utils/CustomButton'
+import Auth from '@/common/firebase'
 
 export default {
   name: 'OAuth',
@@ -33,34 +33,26 @@ export default {
     const isFBSignin = ref(false)
     const userProfile = ref({name: '', photo: ''})
     // Sign In
-    const authList = reactive({
-      google: {func: 'GoogleAuthProvider', signin: isGoogleSignin},
-      facebook: {func: 'FacebookAuthProvider', signin: isFBSignin}
+    const platformList = reactive({
+      google: {signin: isGoogleSignin},
+      facebook: {signin: isFBSignin}
     })
     function userSignin(platform) {
       switchLoading(true)
-      let functionName = authList[platform].func
-      const provider = new firebase.auth[functionName]()
-      firebase.auth()
-        .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(() => {
-          firebase.auth().signInWithRedirect(provider)
-        }).catch(err => {
-          console.log(err)
-          switchLoading(false)
-        })
+      Auth.signin(platform).catch(() => {switchLoading(false)})
     }
     // Sign Out
     function userSignout () {
-      firebase.auth().signOut().then(() => {
-        Object.keys(authList).forEach(p => { authList[p].signin = false })
-        Utils.clearUrlParams()
+      switchLoading(true)
+      Auth.signout().then(() => {
+        Object.keys(platformList).forEach(p => { platformList[p].signin = false })
+        userProfile.value = {}
+        switchLoading(false)
       })
-      userProfile.value = {}
     }
     // 檢查登入狀態
     function handleUserState () {
-      firebase.auth().onAuthStateChanged(user => {
+      Auth.onAuthStateChanged().then(user => {
         switchLoading(false)
         if (user) {
           const platform = user.providerData[0].providerId
@@ -76,15 +68,16 @@ export default {
       platform = platform.replace('.com', '')
       if (platform.includes('google')) {
         const {email} = data
-        Utils.addUrlParams('to', email)
+        Utils.addUrlParam('to', email)
       } else if (platform.includes('facebook')) {
         const {displayName, photoURL} = data
         sendMail(displayName, photoURL)
         userProfile.value = {name: displayName, photo: photoURL}
-        Utils.addUrlParams('name', displayName)
-        Utils.addUrlParams('photo', photoURL)
+        Object.keys(userProfile.value).forEach(key => {
+          Utils.addUrlParam(key, userProfile.value[key])
+        })
       }
-      authList[platform].signin = true
+      platformList[platform].signin = true
     }
     // 寄信給 gmail 含FB大頭貼和姓名
     function sendMail (name, photo) {
@@ -113,7 +106,3 @@ export default {
   }
 }
 </script>
-
-<style lang='scss' scoped>
-
-</style>

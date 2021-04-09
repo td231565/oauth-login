@@ -7,7 +7,7 @@ function getUrlParams () {
   }, {})
 }
 // 增加新屬性
-function addUrlParams (key, val) {
+function addUrlParam (key, val) {
   const url = location.href
   const params = getUrlParams()
   if (!Object.keys(params).includes(key)) {
@@ -23,6 +23,6 @@ function clearUrlParams () {
 
 export default {
   getUrlParams,
-  addUrlParams,
+  addUrlParam,
   clearUrlParams
 }

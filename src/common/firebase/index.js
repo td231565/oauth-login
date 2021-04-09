@@ -1,16 +1,39 @@
-import firebase from 'firebase/app'
-import 'firebase/auth'
+import firebase from './config.js'
+import Utils from '@/utils/utils.js'
 
-// Initila Firebase App
-var firebaseConfig = {
-  apiKey: "AIzaSyDgtQrrN7yCYTFfUF8J2AWZTcj5UPvTyAI",
-  authDomain: "auth-login-bd7cf.firebaseapp.com",
-  projectId: "auth-login-bd7cf",
-  storageBucket: "auth-login-bd7cf.appspot.com",
-  messagingSenderId: "1051077604250",
-  appId: "1:1051077604250:web:28fccac52c22eaf54a0023",
-  measurementId: "G-BXGNZG45JG"
+const providerList = {
+  google: 'GoogleAuthProvider',
+  facebook: 'FacebookAuthProvider'
 }
-firebase.initializeApp(firebaseConfig)
+// Sign In
+const signin = (platform) => {
+  let functionName = providerList[platform]
+  const provider = new firebase.auth[functionName]()
+  return firebase.auth()
+    .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+      firebase.auth().signInWithRedirect(provider)
+    }).catch(err => {
+      console.log(err)
+    })
+}
+// Sign Out
+const signout = () => {
+  return firebase.auth().signOut().then(() => {
+    Utils.clearUrlParams()
+  })
+}
+// Listen Auth State
+const onAuthStateChanged = () => {
+  return new Promise((resolve) => {
+    firebase.auth().onAuthStateChanged(user => {
+      resolve(user)
+    })
+  })
+}
 
-export default firebase
+export default {
+  signin,
+  signout,
+  onAuthStateChanged
+}
