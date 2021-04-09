@@ -1,11 +1,16 @@
 <template>
-  <div v-if="isFBSignin">
-    <p>{{userProfile.name}}</p>
-    <img :src="userProfile.photo" alt="">
+  <div>
+    <section class="mb-3">
+      <h3 class="mb-1">{{userProfile.name ? 'Hello, ' : '　'}}{{userProfile.name || '　'}}</h3>
+      <div style="width: 50px; height: 50px; margin: auto;"
+        :style="`background-image: url(${userProfile.photo})`"></div>
+    </section>
+    <section>
+      <Button v-if="!isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('google')">Google SignIn</Button>
+      <Button v-if="isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('facebook')">FB SignIn</Button>
+      <Button v-if="isGoogleSignin || isFBSignin" class="btn" @click="userSignout">Sign Out</Button>
+    </section>
   </div>
-  <Button v-if="!isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('google')">Google SignIn</Button>
-  <Button v-if="isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('facebook')">FB SignIn</Button>
-  <Button v-if="isGoogleSignin || isFBSignin" class="btn" @click="userSignout">Sign Out</Button>
 </template>
 
 <script>
@@ -29,8 +34,8 @@ export default {
     const userProfile = ref({name: '', photo: ''})
     // Sign In
     const authList = reactive({
-      google: {func: 'GoogleAuthProvider', signin: false},
-      facebook: {func: 'FacebookAuthProvider', signin: false}
+      google: {func: 'GoogleAuthProvider', signin: isGoogleSignin},
+      facebook: {func: 'FacebookAuthProvider', signin: isFBSignin}
     })
     function userSignin(platform) {
       switchLoading(true)
@@ -40,14 +45,6 @@ export default {
         .setPersistence(firebase.auth.Auth.Persistence.LOCAL)
         .then(() => {
           firebase.auth().signInWithRedirect(provider)
-          // firebase.auth().signInWithPopup(provider)
-          //   .then(() => {
-          //     // var credential = result.credential
-          //     // var token = credential.accessToken
-          //   }).catch(err => {
-          //     console.log(err)
-          //     switchLoading(false)
-          //   })
         }).catch(err => {
           console.log(err)
           switchLoading(false)
@@ -56,10 +53,10 @@ export default {
     // Sign Out
     function userSignout () {
       firebase.auth().signOut().then(() => {
-        isGoogleSignin.value = false
-        isFBSignin.value = false
+        Object.keys(authList).forEach(p => { authList[p].signin = false })
         Utils.clearUrlParams()
       })
+      userProfile.value = {}
     }
     // 檢查登入狀態
     function handleUserState () {
@@ -76,18 +73,18 @@ export default {
     })
     // 登入成功處理
     function handleUserSignin (platform, data) {
+      platform = platform.replace('.com', '')
       if (platform.includes('google')) {
         const {email} = data
         Utils.addUrlParams('to', email)
-        isGoogleSignin.value = true
       } else if (platform.includes('facebook')) {
         const {displayName, photoURL} = data
         sendMail(displayName, photoURL)
         userProfile.value = {name: displayName, photo: photoURL}
         Utils.addUrlParams('name', displayName)
         Utils.addUrlParams('photo', photoURL)
-        isFBSignin.value = true
       }
+      authList[platform].signin = true
     }
     // 寄信給 gmail 含FB大頭貼和姓名
     function sendMail (name, photo) {

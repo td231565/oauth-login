@@ -1,6 +1,8 @@
 <template>
   <div v-if="loading" class="loading"><h2>Loading...</h2></div>
-  <OAuth />
+  <div style="display: flex; justify-content: center; padding-top: 3rem;">
+    <OAuth />
+  </div>
 </template>
 
 <script>
