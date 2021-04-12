@@ -1,5 +1,5 @@
 import firebase from './config.js'
-import Utils from '@/utils/utils.js'
+import Utils from '@/common/utils/utils.js'
 
 const providerList = {
   google: 'GoogleAuthProvider',

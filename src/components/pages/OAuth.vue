@@ -1,23 +1,14 @@
 <template>
-  <div>
-    <section class="mb-3">
-      <h3 class="mb-1">{{userProfile.name ? 'Hello, ' : '\u0001'}}{{userProfile.name || '\u0001'}}</h3>
-      <div style="width: 50px; height: 50px; margin: auto;"
-        :style="`background-image: url(${userProfile.photo})`"></div>
-    </section>
-    <section>
-      <Button v-if="!isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('google')">Google SignIn</Button>
-      <Button v-if="isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('facebook')">FB SignIn</Button>
-      <Button v-if="isGoogleSignin || isFBSignin" class="btn" @click="userSignout">Sign Out</Button>
-    </section>
-  </div>
+  <Button v-if="!isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('google')">Google SignIn</Button>
+  <Button v-if="isGoogleSignin && !isFBSignin" class="btn" @click="userSignin('facebook')">FB SignIn</Button>
+  <Button v-if="isGoogleSignin || isFBSignin" class="btn" @click="userSignout">Sign Out</Button>
 </template>
 
 <script>
 import {ApiMail} from '@/common/api'
 import {useStore} from 'vuex'
 import {ref, reactive, onMounted} from 'vue'
-import Utils from '@/utils/utils.js'
+import Utils from '@/common/utils/utils.js'
 import Button from '@/components/utils/CustomButton'
 import Auth from '@/common/firebase'
 
@@ -31,7 +22,6 @@ export default {
   setup () {
     const isGoogleSignin = ref(false)
     const isFBSignin = ref(false)
-    const userProfile = ref({name: '', photo: ''})
     // Sign In
     const platformList = reactive({
       google: {signin: isGoogleSignin},
@@ -46,7 +36,7 @@ export default {
       switchLoading(true)
       Auth.signout().then(() => {
         Object.keys(platformList).forEach(p => { platformList[p].signin = false })
-        userProfile.value = {}
+        clearUser()
         switchLoading(false)
       })
     }
@@ -72,11 +62,11 @@ export default {
       } else if (platform.includes('facebook')) {
         const {displayName, photoURL} = data
         sendMail(displayName, photoURL)
-        userProfile.value = {name: displayName, photo: photoURL}
-        Object.keys(userProfile.value).forEach(key => {
-          Utils.addUrlParam(key, userProfile.value[key])
-        })
+        Utils.addUrlParam('name', displayName)
+        Utils.addUrlParam('photo', photoURL)
       }
+      const params = Utils.getUrlParams()
+      setUser(params)
       platformList[platform].signin = true
     }
     // 寄信給 gmail 含FB大頭貼和姓名
@@ -95,13 +85,19 @@ export default {
     function switchLoading (mode) {
       store.commit('switchLoading', mode)
     }
+    function setUser (data) {
+      store.commit('setUserProfile', data)
+    }
+    // 清空登入資料
+    function clearUser () {
+      store.commit('clearUserProfile')
+    }
 
     return {
       isGoogleSignin,
       isFBSignin,
       userSignin,
-      userSignout,
-      userProfile
+      userSignout
     }
   }
 }

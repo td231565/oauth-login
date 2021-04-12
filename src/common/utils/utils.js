@@ -2,7 +2,7 @@
 function getUrlParams () {
   return location.search.replace('?', '').split('&').reduce((all, curr) => {
     const [key, val] = curr.split('=')
-    all[key] = val
+    all[key] = decodeURIComponent(val)
     return all
   }, {})
 }
